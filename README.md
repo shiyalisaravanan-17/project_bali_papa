@@ -1,181 +1,161 @@
-# Straight Rows Hackathon — Student Package
+﻿# Straight Rows - GNSS Anomaly Detection
 
-**Bluestaq University Programs, in partnership with North Dakota State University**
+## Bluestaq-NDSU Straight Rows Hackathon 2026
 
-Read `docs/Bluestaq_NDSU_Straight_Rows_Hackathon_Official.pdf` first. It is the
-**official event guide**. This package is released at kickoff for an
-individual competition with a 24-hour build, from Friday, November 13 at 4:00 pm
-CT to Saturday, November 14 at 4:00 pm CT. Submissions close at 4:00 pm Saturday
-(hour 24); demos and judging follow. Participation is restricted to NDSU undergraduate students
-who are U.S. citizens. Any language, internet resources, and AI coding assistants
-are allowed; collaboration between competitors is prohibited.
+**Participant:** shiyalisaravanan-17
 
-> “My tractor is drifting. Is it the Sun, an adversary, or my own hardware?”
+**GitHub:** https://github.com/shiyalisaravanan-17/project_bali_papa
 
-Build a working system that detects degraded precision guidance, attributes its
-cause using farm telemetry and Space Domain Awareness (SDA) context, and
-recommends actions with evidence an operator can check. Causes can overlap.
+## Project Overview
 
-## Quickstart
+This project detects and classifies GPS/GNSS guidance anomalies affecting
+three simulated agricultural tractors near Casselton, North Dakota.
 
-Use Python 3.11 or newer. From this package's root:
+The solution combines tractor telemetry with Space Domain Awareness (SDA)
+information to identify likely causes of guidance degradation and recommend
+appropriate operational responses.
 
-```bash
+## Detection System
+
+The system uses five main techniques:
+
+1. **Space Weather:** Detects fleet-wide GNSS degradation using S4,
+   geomagnetic Kp, and receiver measurements.
+2. **Jamming:** Identifies interference using signal strength, satellite
+   losses, fleet-wide comparisons, and RFI context.
+3. **Spoofing:** Detects suspicious guidance-error drift, including
+   deviations relative to neighboring tractors.
+4. **Equipment Fault:** Identifies machine-specific receiver degradation,
+   correction-link failures, and persistent signal deficits.
+5. **Multipath:** Investigated using one-second signal measurements;
+   not included in the current final prediction pipeline.
+
+Multiple causes can overlap during the same time period.
+
+## Technology
+
+- Python 3.11+
+- Pandas
+- NumPy
+- GNSS telemetry analysis
+- Space Domain Awareness data fusion
+- Rule-based anomaly detection
+- Temporal episode grouping
+
+## Installation
+
+Clone the repository and install the dependencies:
+
+```powershell
+git clone https://github.com/shiyalisaravanan-17/project_bali_papa.git
+cd project_bali_papa
 python -m venv .venv
-# macOS/Linux:
-source .venv/bin/activate
-# Windows PowerShell: .venv\Scripts\Activate.ps1
+.\.venv\Scripts\Activate.ps1
 python -m pip install -r requirements.txt
-python submission/baseline.py --data data --output submission.json \
-  --github-handle YOUR_GITHUB_USERNAME \
-  --repo-url https://github.com/YOUR_GITHUB_USERNAME/YOUR_SOLUTION_REPO
+```
+
+## Dataset
+
+Download the official simulated Straight Rows dataset from:
+
+https://github.com/Bluestaq/ndsu-hackathon-submissions/releases/latest
+
+The provided `scripts/get_data.py` utility can download the package:
+
+```powershell
+python scripts/get_data.py
+```
+
+Ensure the extracted files are under `data/`, including
+`data/farm/tractor_telemetry.csv.gz` and the `data/sda/` feeds.
+
+The original dataset is not included in this repository.
+
+## Reproduce the Final Submission
+
+Run the following commands from the project directory:
+
+```powershell
+python build_features.py
+python fuse_sda.py
+python final_pipeline.py --mode evaluation
+python consolidate_jamming.py --input submission.json --output consolidated_submission.json
+Copy-Item consolidated_submission.json submission.json -Force
 python submission/validate_submission.py submission.json
 ```
 
-Use your real GitHub username and the private repository where you are
-building your solution. **Submissions are public: never put your email address
-or student ID in `submission.json`.** The validator rejects them, along with
-template placeholders. A valid baseline is
-only a starting point: improve its detections, recommendations, confidence, and
-evidence. Validation checks format, not correctness.
+These commands generate the submitted evaluation predictions and
+check their format using Bluestaq's official validator.
 
-For the optional interactive notebook:
+## Development Results
 
-```bash
-python -m pip install "jupyterlab>=4,<5"
-cd notebooks
-jupyter lab starter_notebook.ipynb
+The development dataset includes 12 labeled incidents.
+
+Our integrated detection system matched:
+
+| Cause | Matched episodes |
+|---|---|
+| Space Weather | 2/2 |
+| Jamming | 3/3 |
+| Spoofing | 3/3 |
+| Equipment Fault | 2/2 |
+| Multipath | 0/2 |
+| **Total** | **10/12** |
+
+After jamming consolidation, the development run produced
+14 predictions, with 10 matched and 4 unmatched.
+
+These results use a simplified episode-matching evaluator.
+They are not official hackathon scores.
+
+## Development Testing
+
+Run:
+
+```powershell
+python final_pipeline.py --mode development
+python consolidate_jamming.py --input integrated_development.json --output consolidated_development.json
 ```
 
-The notebook loads all feeds, plots development episodes, and calls the same
-baseline script. It intentionally ignores S4, RFI reports, advisories, and
-multipath. The baseline identifies six of the eight evaluation episodes in the
-organizer benchmark; detailed private results are withheld from competitors.
+The labeled data was used to develop and tune thresholds, compare
+detector versions, inspect failure modes, and reduce duplicate alerts.
 
-## Package contents
+## Operator Recommendations
 
-```text
-README.md
-requirements.txt
-docs/Bluestaq_NDSU_Straight_Rows_Hackathon_Official.pdf
-data/farm/tractor_telemetry.csv.gz
-data/sda/sgi_indices.json
-data/sda/scintillation_series.json
-data/sda/constellation_advisories.json
-data/sda/rfi_reports.json
-data/labels/train_episodes.json
-notebooks/starter_notebook.ipynb
-submission/baseline.py
-submission/submission_template.json
-submission/validate_submission.py
-```
-
-## Simulated timeline
-
-Scenario epoch: **2026-05-04T00:00:00Z**. These are simulated dates,
-not the actual event dates.
-
-- Development: hours 0–48, with 12 labeled episodes.
-- Evaluation: **2026-05-06T00:00:00Z through 2026-05-07T00:00:00Z**, with
-  eight unlabeled episodes. Only this window is scored.
-- Three machines work approximately 06:00–22:00 local time
-  (11:00Z–03:00Z) and park overnight.
-- Scored guidance episodes concern working tractors. Poor reception while
-  parked alone is not a scored guidance event.
-- Retrospective processing of the full evaluation window is allowed. Episode
-  onset accuracy is not a measurement of online detection latency.
-
-## Farm telemetry
-
-The compressed CSV has **777,600 rows**: 72 hours × 3 tractors × 1 Hz.
-
-| Column | Meaning |
+| Cause | Action |
 |---|---|
-| `ts` | UTC timestamp |
-| `tractor_id` | `T1`, `T2`, or `T3` |
-| `lat`, `lon` | Reported GNSS position; can be displaced during spoofing |
-| `speed_mps` | 4.5 while working, 0 while parked |
-| `cross_track_error_m` | Deviation from the intended line, supplied by a separate simulated guidance monitor |
-| `num_sats` | Satellites used in the navigation solution |
-| `mean_cn0_dbhz` | Mean carrier-to-noise ratio across tracked satellites |
-| `min_cn0_dbhz` | Weakest tracked signal; individual satellite measurements are not supplied |
-| `fix_state` | `RTK_FIXED`, `RTK_FLOAT`, `DGPS`, `AUTONOMOUS`, or `NO_FIX` |
-| `base_link_ok` | Whether the RTK correction link is available |
+| SPACE_WEATHER | HALT_OR_DEGRADED_MODE |
+| JAMMING | HALT_AND_REPORT |
+| SPOOFING | HALT_CROSSCHECK_AND_REPORT |
+| EQUIPMENT_FAULT | SERVICE_MACHINE_OTHERS_CONTINUE |
+| MULTIPATH | CONTINUE_FALSE_ALARM |
 
-The guidance monitor is an idealized simulated measurement, not a claim that a
-real GNSS receiver independently knows its true cross-track error. Reported
-position is not trusted ground truth. Real deployments would need independent
-position or inertial checks.
+## Limitations
 
-## SDA feeds
+- Thresholds were tuned using a small simulated development dataset.
+- Hidden evaluation accuracy is unknown.
+- Brief multipath events remain difficult to classify reliably.
+- RFI reports may be delayed, missing, or inaccurate.
+- Some detections may have inaccurate start or end times.
+- Confidence values are heuristic rather than statistically calibrated.
+- Retrospective analysis does not establish live detection latency.
 
-- `sgi_indices.json`: three-hourly **Kp** and hourly **Dst**. The synthetic
-  storm profile is inspired by public measurements of the May 2024 Gannon
-  storm; it is not an exact archival replay.
-- `scintillation_series.json`: a 15-minute regional **S4** proxy, lagging Kp.
-  Compare it with actual farm impact rather than assuming identical timing.
-- `constellation_advisories.json`: routine maintenance and storm advisories.
-- `rfi_reports.json`: reports with uncertain locations and 10–30-minute delays.
-  Some interference events have no report; reports can be false alarms. An
-  uncertainty ellipse and a nearby timestamp are corroboration, not proof.
+Independent inertial measurements, receiver-level GNSS signal diagnostics,
+and improved RFI localization could strengthen future attribution.
 
-All data is synthetic and unclassified. No live accounts, external API credits,
-physical equipment, or RF transmission are required.
+## Main Files
 
-## Classes and expected actions
+- `build_features.py` - Telemetry feature extraction
+- `fuse_sda.py` - Space and farm data fusion
+- `final_pipeline.py` - Integrated anomaly detection
+- `consolidate_jamming.py` - Episode consolidation
+- `evaluate_detector.py` - Development evaluation
+- `submission.json` - Evaluation predictions
+- `submission/validate_submission.py` - Official format validator
 
-| Class | Expected action |
-|---|---|
-| `SPACE_WEATHER` | `HALT_OR_DEGRADED_MODE` |
-| `JAMMING` | `HALT_AND_REPORT` |
-| `SPOOFING` | `HALT_CROSSCHECK_AND_REPORT` |
-| `EQUIPMENT_FAULT` | `SERVICE_MACHINE_OTHERS_CONTINUE` |
-| `MULTIPATH` | `CONTINUE_FALSE_ALARM` |
+## Reproducibility
 
-Do not force one class per timestamp: a machine fault or interference can
-coincide with a regional storm. Use a separate detection for each distinct cause.
+The solution uses simulated, unclassified data and requires no live
+external API for inference. All processing can be run locally.
 
-## Deliverables and judging
-
-Submit by **hour 24 (Saturday, November 14, 4:00 pm CT)**:
-
-1. `submission.json`, following the template and passing the validator.
-2. A repository link with source, pinned dependencies, exact reproduction
-   commands, approach, limitations, and additional data that would help.
-3. A five-minute working demo followed by three minutes of Q&A.
-
-No separate technical memo is required. You must understand and defend your
-solution, including code produced with AI assistance.
-
-| Event criterion | Points |
-|---|---:|
-| Technical execution | 30 |
-| Mission relevance and decision quality | 25 |
-| Innovation and research depth | 20 |
-| Assurance and rigor | 15 |
-| Demo and communication | 10 |
-
-The automated diagnostic is supporting evidence for judges, not an extra
-40-point event component. Its matching thresholds, onset credit, false-positive
-rules, and recurrent-multipath exemption are published on page 4 of the PDF.
-Ties use mission relevance and decision quality, then technical execution.
-
-## Submitting by the deadline
-
-**Deadline: Saturday, November 14, 2026, 4:00 pm Central Time.** Pull requests
-opened or changed after the deadline are not accepted.
-
-1. Build in your own GitHub repository and keep it private until you submit.
-2. Before the deadline, make your repository public.
-3. Fork [Bluestaq/ndsu-hackathon-submissions](https://github.com/Bluestaq/ndsu-hackathon-submissions) and add exactly one file:
-   `submissions/<your-github-username>/submission.json`.
-4. Open a pull request. Its opening time is your submission time. A check
-   validates the file's format only; it never runs your code.
-
-Full step-by-step instructions, the agenda and results are at
-<https://bluestaq.github.io/ndsu-hackathon-submissions/>.
-
-Registered participants receive the confirmed date, room, and kickoff time from
-**universityprograms@bluestaq.com**. One winner receives **both a paid summer internship at Bluestaq headquarters
-in Colorado Springs and a full one-year scholarship that pays tuition**. The internship is subject
-to standard internship eligibility and hiring requirements.
+Developed individually for the Bluestaq-NDSU Straight Rows Hackathon.
