@@ -1,0 +1,36 @@
+.venv/
+data/
+__pycache__/
+.pytest_cache/
+*.pyc
+
+# Local Python environments and caches
+.venv/
+__pycache__/
+.pytest_cache/
+*.pyc
+
+# Downloaded or generated datasets
+data/
+*.csv
+*.csv.gz
+
+# Intermediate predictions and experiment outputs
+*_development.json
+*_predictions.json
+*_submission_backup.json
+*_candidates.json
+advanced_submission.json
+baseline_submission.json
+baseline_submission_backup.json
+consolidated_submission.json
+original_19_submission.json
+pre_consolidation_submission.json
+evaluation_submission_backup.json
+validated_submission_backup.json
+nine_match_development.json
+ten_match_development.json
+
+# Local diagnostics
+pipeline_sources.txt
+remaining_diagnostics.txt
